@@ -1,0 +1,66 @@
+# ────────────────────────────────────────────
+# Sovereign Allocator — Default Configuration
+# ────────────────────────────────────────────
+# Tune these without touching source code.
+# All monetary values are fractions of total capital.
+
+universe:
+  asset_symbols:
+    - EURUSD
+    - GBPUSD
+    - USDJPY
+    - XAUUSD
+    - US30
+    - NAS100
+  etf_symbols:
+    - SPY
+    - QQQ
+    - HYG
+    - TLT
+    - GLD
+
+engine_A_tcn:
+  lookback: 60
+  position_cap: 0.25
+  lambda_u: 1.0
+  lambda_c: 0.5
+  use_stub: true           # set false when a trained model is loaded
+
+engine_B_graph:
+  corr_window: 60
+  graph_update_freq: 20
+  diffusion_alpha: 0.3
+  diffusion_steps: 2
+  min_edge_weight: 0.3
+  position_cap: 0.20
+  lambda_u: 1.2
+  lambda_c: 0.5
+
+engine_C_etf:
+  shock_window: 40
+  shock_threshold: 2.0
+  beta_window: 120
+  beta_update_freq: 30
+  signal_decay: 5
+  position_cap: 0.20
+  lambda_u: 1.0
+  lambda_c: 0.6
+
+allocator:
+  gamma_base: 2.0
+  lambda_turn: 0.10
+  budget_cap: 0.80          # max fraction for a single engine
+
+governance:
+  max_drawdown: 0.10        # 10% portfolio drawdown → kill switch
+  per_engine_dd: 0.05       # 5% per-engine drawdown → disable that engine
+  consecutive_neg_sharpe: 10
+  extreme_vol_threshold: 0.90
+  recovery_factor: 0.50
+
+state_builder:
+  vol_window: 20
+  vol_window_5d: 100
+  corr_window: 60
+  sma_window: 20
+  trend_window: 14
