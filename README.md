@@ -1,275 +1,253 @@
-# Sovereign Allocator
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:000000,30:0a000f,60:100020,100:000a1a&height=240&section=header&text=SOVEREIGN-ALLOCATOR&fontSize=48&fontColor=bf00ff&fontAlignY=42&desc=▸%20Multi-engine%20regime-aware%20portfolio%20allocation%20system&descSize=15&descAlignY=63&descColor=00fff0&animation=fadeIn&stroke=bf00ff&strokeWidth=2" width="100%"/>
+</div>
 
-A multi-strategy, regime-aware dynamic portfolio system. Three orthogonal trading engines are unified under a utility-maximising quadratic-program allocator with a hard governance layer.
+<div align="center">
+  <a href="#">
+    <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=800&size=17&duration=2500&pause=1000&color=BF00FF&center=true&vCenter=true&width=680&lines=%3E+running+3+orthogonal+engines...;%3E+graph+diffusion%3A+contagion+detected+in+NAS100;%3E+QP+solve%3A+b*+%3D+%5BA%3A0.42%2C+B%3A0.35%2C+C%3A0.18%5D;%3E+governance+pre-check%3A+PASS;%3E+combined+positions+dispatched;%3E+NAV%3A+1.073+%7C+peak%3A+1.081+%7C+dd%3A+0.74%25" />
+  </a>
+</div>
 
-Built with $100,000 of live capital behind it.
+<br/>
 
----
+<div align="center">
 
-## What it does
+[![Python](https://img.shields.io/badge/Python_3.11+-000000?style=for-the-badge&logo=python&logoColor=bf00ff&labelColor=000000)](https://python.org)
+[![NumPy](https://img.shields.io/badge/NumPy-000000?style=for-the-badge&logo=numpy&logoColor=00fff0&labelColor=000000)](https://numpy.org)
+[![SciPy](https://img.shields.io/badge/SciPy_QP-000000?style=for-the-badge&logo=scipy&logoColor=bf00ff&labelColor=000000)](https://scipy.org)
+[![Capital](https://img.shields.io/badge/%24100K_Live_Capital-000000?style=for-the-badge&logoColor=00fff0&labelColor=000000&color=bf00ff)](.)
+[![License](https://img.shields.io/badge/MIT-000000?style=for-the-badge&labelColor=000000&color=00fff0)](LICENSE)
 
-Most algorithmic trading systems rely on one model. If that model breaks (regime shift, data issue, edge decay), you lose. The Sovereign Allocator runs **three independent engines** that find edge in completely different ways, then uses a **mathematical optimiser** to decide in real-time how much capital each engine deserves — punishing risk, cost, and poor recent performance.
+</div>
 
----
-
-## Architecture
+<br/>
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    Market Data Feed                       │
-│              UniverseSnapshot (every bar)                 │
-└─────────────────────┬────────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│                   State Builder                          │
-│  Raw bars → MarketState z_t → AllocatorState s_alloc_t  │
-│  volatility · dispersion · correlation · breadth ·      │
-│  trend · liquidity · macro                              │
-└──────┬───────────────┬────────────────┬─────────────────┘
-       │               │                │
-       ▼               ▼                ▼
-┌──────────┐   ┌──────────────┐   ┌────────────────┐
-│ Engine A │   │   Engine B   │   │   Engine C     │
-│   TCN    │   │    Graph     │   │   ETF Shock    │
-│(temporal)│   │  Diffusion   │   │ (macro flows)  │
-│          │   │(cross-asset) │   │                │
-│ η̂, U, Ĉ │   │  η̂, U, Ĉ    │   │   η̂, U, Ĉ    │
-└────┬─────┘   └──────┬───────┘   └──────┬─────────┘
-     │                │                   │
-     └────────────────┴───────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────┐
-│              Dynamic Portfolio Allocator                  │
-│                                                          │
-│  1. Utility score per engine:                            │
-│       ν_t^s = η̂_t^s − λ_U · U_t^s − λ_C · Ĉ_t^s      │
-│                                                          │
-│  2. Online covariance Σ_t^{slv} (EWMA + shrinkage)      │
-│                                                          │
-│  3. QP solve:                                            │
-│     b* = argmax [ ν^T b − (γ/2)b^T Σ b − λ‖b−b_prev‖₁ ]│
-│     s.t. 1^T b ≤ 1,  b ≥ 0                              │
-│                                                          │
-│  4. Governance pre/post check                            │
-└──────────────────────────────────────────────────────────┘
-                      │
-                      ▼
-┌──────────────────────────────────────────────────────────┐
-│  Combined positions = Σ_s budget_s × engine_s.positions  │
-└──────────────────────────────────────────────────────────┘
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  Three orthogonal engines. One quadratic programme. Hard governance.         ║
+║  Built with $100,000 of live capital behind it.                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## The Three Engines
+## `> PHILOSOPHY.exe`
 
-### Engine A — Causal TCN (Temporal / Time-Series Edge)
+Most algo systems rely on one model. When that model breaks — regime shift, edge decay, data anomaly — you lose.
 
-**What it captures:** Patterns in a single asset's own price history.
+The Sovereign Allocator runs **three engines that find edge in completely different ways**. A mathematical optimiser decides in real-time how much capital each engine deserves, punishing risk, cost, and poor recent performance. A hard governance layer overrides everything if the maths goes wrong.
 
-A [causal dilated temporal convolutional network](https://arxiv.org/abs/1803.01271) reads the last `L` bars of returns and produces a probability distribution over {short, flat, long} for the next bar:
+```
+One model dies  →  one engine disabled  →  two still running
+All models die  →  kill switch fires    →  flat, waiting for recovery
+```
+
+---
+
+## `> ARCHITECTURE.exe`
+
+```mermaid
+graph TD
+    FEED["📊 Market Data Feed\nUniverseSnapshot (every bar)"]
+
+    SB["⚙️ State Builder\nRaw bars → MarketState → AllocatorState\nvol · dispersion · correlation · breadth · trend · liquidity"]
+
+    EA["🔵 Engine A — TCN\nCausal Temporal Convolutional\ntime-series momentum & mean-reversion"]
+    EB["🟣 Engine B — Graph Diffusion\nCross-asset shock propagation\nsector contagion & spillover"]
+    EC["🟡 Engine C — ETF Shock\nMacro flow detection\nBeta × z-score drift injection"]
+
+    UTIL["📐 Utility Scoring\nν = η̂ − λ_U·U − λ_C·Ĉ\nper engine, every bar"]
+
+    COV["📈 Online Covariance\nEWMA + Ledoit-Wolf shrinkage\nstrategy-level Σ"]
+
+    QP["⚡ QP Allocator\nb* = argmax ν᷊b − (γ/2)b᷊Σb − λ‖b−b_prev‖₁\nSLSQP via scipy"]
+
+    GOV["🛡️ Governance Layer\npre-check: per-engine drawdown & Sharpe\npost-check: portfolio kill-switch"]
+
+    POS["🎯 Combined Positions\nΣ_s budget_s × engine_s.positions"]
+
+    FEED --> SB
+    SB --> EA & EB & EC
+    EA & EB & EC --> UTIL
+    UTIL --> COV
+    COV --> QP
+    QP --> GOV
+    GOV --> POS
+
+    style FEED fill:#000000,color:#8892b0,stroke:#1f2937
+    style SB fill:#000000,color:#00fff0,stroke:#00fff0,stroke-width:1px
+    style EA fill:#000a1a,color:#375bd2,stroke:#375bd2,stroke-width:2px
+    style EB fill:#000a1a,color:#bf00ff,stroke:#bf00ff,stroke-width:2px
+    style EC fill:#000a1a,color:#f0b90b,stroke:#f0b90b,stroke-width:2px
+    style UTIL fill:#000000,color:#00fff0,stroke:#00fff0,stroke-width:1px
+    style COV fill:#000000,color:#00fff0,stroke:#00fff0,stroke-width:1px
+    style QP fill:#000000,color:#bf00ff,stroke:#bf00ff,stroke-width:2px
+    style GOV fill:#000000,color:#ef4444,stroke:#ef4444,stroke-width:2px
+    style POS fill:#000000,color:#00fff0,stroke:#00fff0,stroke-width:2px
+```
+
+---
+
+## `> THE_THREE_ENGINES.exe`
+
+<details open>
+<summary><b>🔵 Engine A — Causal TCN (Temporal / Time-Series Edge)</b></summary>
+
+<br/>
+
+**What it captures:** Patterns in a single asset's own price history — momentum, mean-reversion, autocorrelation regimes.
+
+A causal dilated temporal convolutional network reads the last `L` bars and produces a probability distribution over `{short, flat, long}`:
 
 ```
 P(r_{t+1} | r_t, r_{t-1}, ..., r_{t-L})
 ```
 
-Causal means no look-ahead leakage — each output depends only on past inputs. Dilated convolutions exponentially expand the receptive field without adding parameters.
+Causal = zero look-ahead leakage. Dilated convolutions exponentially expand the receptive field without parameter bloat.
 
-**Why it's useful:** Captures momentum, mean-reversion regimes, and autocorrelation structures that purely statistical models miss.
+**Out of the box:** a momentum-based stub (`_CausalTCNStub`). Plug in any PyTorch / MLX model:
 
-**Output:** Directional position for each symbol, scaled by model confidence.
+```python
+class MyModel:
+    def predict_proba(self, returns: np.ndarray) -> np.ndarray:
+        # returns: 1-D log-return array (newest last)
+        # output:  np.array([p_short, p_flat, p_long])
+        ...
 
-**Stub mode:** Out of the box, a momentum-based proxy (`_CausalTCNStub`) is used. Swap in your trained PyTorch / MLX model via the `model=` parameter.
+TCNEngine(symbols=ASSETS, model=MyModel())
+```
 
----
+</details>
 
-### Engine B — Graph Diffusion (Cross-Asset / Micro Edge)
+<details open>
+<summary><b>🟣 Engine B — Graph Diffusion (Cross-Asset / Micro Edge)</b></summary>
 
-**What it captures:** How a shock in one asset ripples through its correlated neighbours.
+<br/>
 
-The asset universe is modelled as a graph G = (V, E):
-- **Nodes** = individual assets
-- **Edges** = rolling correlations (sparse, only edges above `min_edge_weight`)
+**What it captures:** How a shock in one asset ripples through correlated neighbours — sector spillovers, contagion, co-movement not explained by a single factor.
 
-Shocks propagate via the diffusion operator:
+Assets are nodes. Rolling correlations above `min_edge_weight` become edges. Shocks propagate via:
 
 ```
 H_t = (I + α · Ã)^K  ·  x_t
+
+Ã = symmetrically normalised adjacency (correlation-based)
+α = diffusion coefficient   (propagation speed)
+K = diffusion steps         (neighbourhood depth)
+x_t = current bar return vector (shock)
 ```
 
-Where:
-- `Ã` = symmetrically normalised adjacency matrix
-- `α` = diffusion coefficient (how fast shocks travel between nodes)
-- `K` = depth of neighbourhood to look (diffusion steps)
-- `x_t` = current bar's return vector (shock vector)
+`H_t[i] > 0` → asset `i` dragged upward by its neighbours. Graph rebuilt every `graph_update_freq` bars.
 
-A positive `H_t[i]` means asset `i` is being dragged upward by its neighbours.
+</details>
 
-**Why it's useful:** Captures contagion, sector spillovers, and co-movement not explained by a single market factor. A large move in a liquid name (e.g. AAPL) diffuses to related illiquid names before they respond.
+<details open>
+<summary><b>🟡 Engine C — ETF Shock Propagation (Macro / Top-Down Edge)</b></summary>
 
-**Graph update:** Rebuilt every `graph_update_freq` bars using rolling correlation.
+<br/>
+
+**What it captures:** ETF flows and macro shocks cascading into individual assets.
+
+```
+1. shock detection   →  z_t^ETF = (r_t^ETF − μ) / σ   [trigger at |z| > 2.0]
+2. beta estimation   →  β = Cov(r^asset, r^ETF) / Var(r^ETF)   [rolling OLS]
+3. drift injection   →  drift_t = Σ_ETF  β × shock_amplitude
+4. decay             →  signal tapers linearly over signal_decay bars
+```
+
+Large SPY inflow → lifts constituents. HYG dump → cascades into high-beta equities. This engine catches that before price fully adjusts.
+
+</details>
 
 ---
 
-### Engine C — ETF Shock Propagation (Macro / Top-Down Edge)
+## `> THE_MATH.exe`
 
-**What it captures:** ETF flows and macro shocks propagating into individual assets.
+### Utility scoring
 
-**Pipeline:**
-
-1. **Shock detection** — for each ETF, compute a rolling z-score of its return:
-   ```
-   z_t^{ETF} = (r_t^{ETF} − μ) / σ
-   ```
-   A shock is declared when `|z| > threshold` (default: 2.0 standard deviations).
-
-2. **Beta estimation** — rolling OLS gives each asset's loading on each ETF:
-   ```
-   β_{asset, ETF} = Cov(r^asset, r^ETF) / Var(r^ETF)
-   ```
-
-3. **Propagation** — when a shock fires, inject a directional drift into each asset:
-   ```
-   drift_{t, asset} = Σ_ETF  β_{asset, ETF} × shock_amplitude
-   ```
-
-4. **Decay** — the injected signal tapers linearly over `signal_decay` bars. A shock from 3 bars ago has less influence than a fresh one.
-
-**Why it's useful:** Captures top-down flow effects — a large inflow into SPY lifts its constituents; a HYG dump signals credit stress that cascades into high-beta equities.
-
----
-
-## The Allocator
-
-### Utility Score
-
-For each engine `s` at time `t`:
+Each engine `s` is scored every bar:
 
 ```
-ν_t^s = η̂_t^s − λ_U · U_t^s − λ_C · Ĉ_t^s
+ν_t^s = η̂_t^s  −  λ_U · U_t^s  −  λ_C · Ĉ_t^s
+
+η̂   = EWMA of realised PnL (annualised)  → recent performance
+U   = risk penalty (vol × regime)         → penalise dangerous engines
+Ĉ   = cost estimate (spread × churn)      → penalise expensive engines
 ```
 
-| Term | Meaning |
-|------|---------|
-| `η̂_t^s` | Expected edge — EWMA of realised PnL, annualised. Stronger recent performance → higher η̂. |
-| `U_t^s` | Risk penalty — a function of realised volatility and regime. High volatility → penalise more. |
-| `Ĉ_t^s` | Cost / slippage estimate — proportional to bid-ask spread and position churn. |
-| `λ_U`, `λ_C` | Penalty weights — tunable per engine. |
+An engine with positive edge but high risk and cost can still score negative → QP allocates it nothing.
 
-An engine with a positive edge but high risk and cost can still have a negative utility, causing the QP to allocate it less budget.
-
-### Quadratic Programme
-
-The allocator solves for optimal strategy budgets `b_t*`:
+### Quadratic programme
 
 ```
 b* = argmax_b  [ ν^T b  −  (γ/2) b^T Σ b  −  λ_turn ‖b − b_{t-1}‖₁ ]
 
-subject to:  1^T b ≤ 1    (budgets sum to at most 100%)
-             b ≥ 0         (no negative allocation to an engine)
-```
+     s.t.   1^T b ≤ 1    (budgets ≤ 100%)
+            b ≥ 0         (no shorting an engine)
 
-| Term | Effect |
-|------|--------|
-| `ν^T b` | Reward: allocate more to higher-utility engines |
-| `(γ/2) b^T Σ b` | Risk penalty: penalise correlated engine exposures (Σ = strategy covariance) |
-| `λ_turn ‖b − b_{t-1}‖₁` | Turnover penalty: avoid thrashing allocations every bar |
+ν^T b         →  reward high-utility engines
+(γ/2)b^T Σ b  →  penalise correlated engine exposures
+λ_turn ‖Δb‖₁  →  penalise thrashing allocations every bar
+```
 
 **Adaptive parameters:**
 - `γ_t` scales with `volatility_regime` — more risk-averse in stressed markets
 - `λ_turn` scales with `(1 − liquidity_score)` — higher turnover cost when illiquid
 
-The L1 penalty is linearised via auxiliary slack variables and solved with SLSQP (scipy). No external QP solver needed.
+Solved with SLSQP (scipy). No external QP solver required.
 
-### Online Covariance (Σ)
+### Online covariance (Σ)
 
-Σ is the 3×3 strategy-level covariance matrix estimated from each engine's realised PnL stream using exponentially weighted moving average (EWMA). Ledoit-Wolf constant-correlation shrinkage keeps it well-conditioned even when the window is short.
-
----
-
-## Governance Layer
-
-Hard rules that override the QP — the maths never gets final say.
-
-### Pre-check (per engine, before QP)
-
-| Rule | Action |
-|------|--------|
-| Engine drawdown ≥ `per_engine_dd` (5%) | Set engine utility = 0, QP allocates nothing |
-| Engine negative Sharpe for N consecutive bars | Halve the engine's utility |
-
-### Post-check (portfolio level, after QP)
-
-| Rule | Action |
-|------|--------|
-| Portfolio drawdown from peak ≥ `max_drawdown` (10%) | **Kill switch**: all budgets → 0, all positions → flat |
-| Recovery threshold not yet reached | Kill switch remains active |
-
-Recovery is defined as: `NAV ≥ peak × (1 − max_drawdown × recovery_factor)`. This prevents re-entering a collapsing market immediately after a brief bounce.
+3×3 strategy-level covariance from each engine's realised PnL stream. EWMA for recency-weighting, Ledoit-Wolf constant-correlation shrinkage for stability on short windows.
 
 ---
 
-## File Structure
+## `> GOVERNANCE.exe`
+
+Hard rules. The maths never gets final say.
 
 ```
-the-code/
-├── sovereign_allocator/
-│   ├── data/
-│   │   └── schemas.py           # BarData, UniverseSnapshot, StrategySignal,
-│   │                            #   MarketState, AllocatorState, BudgetAllocation
-│   ├── engines/
-│   │   ├── base.py              # BaseEngine ABC — step(), EWMA η̂, realized PnL
-│   │   ├── tcn_engine.py        # Engine A: Causal TCN
-│   │   ├── graph_diffusion_engine.py  # Engine B: Graph Diffusion
-│   │   └── etf_shock_engine.py  # Engine C: ETF Shock Propagation
-│   ├── allocator/
-│   │   ├── covariance.py        # Online EWMA covariance + Ledoit-Wolf shrinkage
-│   │   ├── qp_solver.py         # Quadratic programme (SLSQP via scipy)
-│   │   └── portfolio.py         # DynamicPortfolioAllocator — wires everything
-│   ├── governance/
-│   │   └── kill_switch.py       # GovernanceLayer — per-engine + portfolio rules
-│   └── utils/
-│       └── state_builder.py     # Raw bars → MarketState → AllocatorState
-├── configs/
-│   └── default.yaml             # All tunable hyperparameters
-├── tests/
-│   └── test_smoke.py            # 6 smoke tests (all passing)
-├── run_backtest.py               # Synthetic 500-bar backtest demo
-├── requirements.txt
-└── setup.py
+PRE-CHECK  (per engine, before QP)
+──────────────────────────────────
+Engine drawdown ≥ 5%         →  utility = 0  (QP allocates nothing)
+Negative Sharpe for 10 bars  →  utility × 0.5  (degraded, not killed)
+
+POST-CHECK  (portfolio level, after QP)
+────────────────────────────────────────
+Portfolio drawdown ≥ 10%     →  KILL SWITCH
+                                all budgets = 0
+                                all positions = flat
+                                no reentry until NAV recovers
+
+Recovery condition:
+  NAV ≥ peak × (1 − max_drawdown × recovery_factor)
+  Prevents re-entering a collapsing market on a dead-cat bounce.
 ```
 
 ---
 
-## Quick Start
+## `> QUICKSTART.exe`
 
 ```bash
 # Install
 pip install -e .
 
-# Run the smoke tests
+# Run smoke tests (all 6 should pass)
 python -m pytest tests/ -v
 
-# Run a synthetic 500-bar backtest
+# Run 500-bar synthetic backtest
 python run_backtest.py
 
 # Custom run
 python run_backtest.py --bars 1000 --seed 42
 ```
 
----
-
-## Wiring to Your Data Feed
-
-The entry point is `DynamicPortfolioAllocator.step(snapshot)`:
+### Wire to your data feed
 
 ```python
 from sovereign_allocator import DynamicPortfolioAllocator
 from sovereign_allocator.engines import TCNEngine, GraphDiffusionEngine, ETFShockEngine
 from sovereign_allocator.utils.state_builder import StateBuilder
-from sovereign_allocator.data.schemas import BarData, UniverseSnapshot
 
 ASSETS = ["EURUSD", "XAUUSD", "NAS100", "US30"]
 ETFS   = ["SPY", "QQQ", "HYG", "TLT"]
@@ -283,71 +261,122 @@ allocator = DynamicPortfolioAllocator(
     state_builder=StateBuilder(symbols=ASSETS + ETFS),
 )
 
-# In your bar loop:
-for bar_data in your_feed:
-    snapshot = UniverseSnapshot(
-        timestamp=bar_data.timestamp,
-        asset_bars={s: BarData(...) for s in ASSETS},
-        etf_bars={e: BarData(...) for e in ETFS},
-    )
+for snapshot in your_feed:
     allocation, positions = allocator.step(snapshot)
 
-    # allocation.budgets  → {"A": 0.42, "B": 0.31, "C": 0.22}
-    # positions           → {"EURUSD": 0.14, "XAUUSD": -0.08, ...}
+    # allocation.budgets    → {"A": 0.42, "B": 0.31, "C": 0.22}
+    # positions             → {"EURUSD": 0.14, "XAUUSD": -0.08, ...}
     # allocation.kill_switch → True if governance fired
-    allocator.update_nav(your_current_nav)
+
+    allocator.update_nav(current_nav)
 ```
 
 ---
 
-## Plugging in a Trained TCN
+## `> CONFIG.exe`
 
-Replace the stub with your PyTorch or MLX model:
+```yaml
+# configs/default.yaml
 
-```python
-class MyTCNModel:
-    def predict_proba(self, returns: np.ndarray) -> np.ndarray:
-        # returns: 1-D array of log-returns (newest last)
-        # must return: np.array([p_short, p_flat, p_long])
-        ...
+universe:
+  asset_symbols: [EURUSD, GBPUSD, USDJPY, XAUUSD, US30, NAS100]
+  etf_symbols:   [SPY, QQQ, HYG, TLT, GLD]
 
-engine_a = TCNEngine(symbols=ASSETS, model=MyTCNModel())
+engine_A_tcn:
+  lookback:       60      # bars of history fed to TCN
+  position_cap:   0.25    # max abs weight per symbol
+  lambda_u:       1.0     # risk penalty weight
+  lambda_c:       0.5     # cost penalty weight
+
+engine_B_graph:
+  corr_window:        60      # rolling correlation window
+  graph_update_freq:  20      # rebuild graph every N bars
+  diffusion_alpha:    0.3     # shock propagation speed
+  diffusion_steps:    2       # neighbourhood depth K
+  min_edge_weight:    0.3     # sparsity threshold
+
+engine_C_etf:
+  shock_window:    40     # vol window for z-score
+  shock_threshold: 2.0    # |z| to declare macro shock
+  beta_window:     120    # rolling OLS window
+  signal_decay:    5      # bars before signal fades
+
+allocator:
+  gamma_base:   2.0       # QP risk aversion
+  lambda_turn:  0.10      # turnover penalty
+  budget_cap:   0.80      # max single-engine fraction
+
+governance:
+  max_drawdown:      0.10   # portfolio kill switch
+  per_engine_dd:     0.05   # per-engine disable threshold
+  recovery_factor:   0.50   # recovery before re-entry
 ```
 
 ---
 
-## Configuration
+## `> WHAT_TO_TUNE.exe`
 
-All hyperparameters live in `configs/default.yaml`. Notable ones:
+These are the placeholder values you'll calibrate on live data:
 
-| Parameter | Default | Effect |
-|-----------|---------|--------|
-| `gamma_base` | 2.0 | Base risk aversion in QP. Higher = more conservative. |
-| `lambda_turn` | 0.10 | Turnover penalty. Higher = stickier allocations. |
-| `max_drawdown` | 0.10 | Portfolio drawdown threshold for kill switch (10%). |
-| `per_engine_dd` | 0.05 | Per-engine drawdown before engine is disabled (5%). |
-| `diffusion_alpha` | 0.3 | Graph shock propagation speed. |
-| `shock_threshold` | 2.0 | ETF z-score to declare a macro shock. |
-
----
-
-## What's Left to Tune
-
-These are the placeholder estimation pieces you'll calibrate on live data:
-
-1. **`η̂` half-life** — the EWMA decay in `BaseEngine._estimate_eta()`. Default 20 bars. Shorter = more reactive; longer = more stable.
-2. **`λ_U`, `λ_C` per engine** — how much you penalise risk vs cost for each strategy.
-3. **Normalisation thresholds** in `StateBuilder.build_alloc_state()` — e.g. "40% vol = fully stressed". These are market-specific.
-4. **Beta window** for ETF engine — longer = more stable betas but slower to adapt.
-5. **`recovery_factor`** — how much of the drawdown must recover before re-engaging.
+| Parameter | What it controls | How to tune |
+|---|---|---|
+| `eta_hat` half-life | EWMA decay in `BaseEngine._estimate_eta()` | Shorter = reactive, longer = stable. Start at 20 bars. |
+| `λ_U`, `λ_C` per engine | Risk vs cost sensitivity per strategy | Grid search on backtest Sharpe |
+| Vol normalisation thresholds | In `StateBuilder.build_alloc_state()` | Set "40% annualised = fully stressed" from your asset class |
+| Beta window (Engine C) | OLS stability vs adaptation speed | Longer = stable betas, slower to adapt |
+| `recovery_factor` | How much NAV must recover before re-engagement | 0.5 = 50% of drawdown must heal |
 
 ---
 
-## Dependencies
+## `> STRUCTURE.exe`
 
-- `numpy` — numerics everywhere
-- `scipy` — SLSQP quadratic programme solver
-- `pyyaml` — config loading
-- `pytest` — tests
+```
+sovereign-allocator/
+│
+├── sovereign_allocator/
+│   ├── data/
+│   │   └── schemas.py                ← BarData · UniverseSnapshot · StrategySignal
+│   │                                    MarketState · AllocatorState · BudgetAllocation
+│   ├── engines/
+│   │   ├── base.py                   ← BaseEngine ABC — step() · EWMA η̂ · realised PnL
+│   │   ├── tcn_engine.py             ← Engine A: Causal TCN
+│   │   ├── graph_diffusion_engine.py ← Engine B: Graph Diffusion
+│   │   └── etf_shock_engine.py       ← Engine C: ETF Shock Propagation
+│   ├── allocator/
+│   │   ├── covariance.py             ← Online EWMA covariance + Ledoit-Wolf shrinkage
+│   │   ├── qp_solver.py              ← QP (SLSQP via scipy) — no external solver needed
+│   │   └── portfolio.py              ← DynamicPortfolioAllocator — main orchestrator
+│   ├── governance/
+│   │   └── kill_switch.py            ← GovernanceLayer — pre/post check, kill switch
+│   └── utils/
+│       └── state_builder.py          ← Raw bars → MarketState → AllocatorState
+│
+├── configs/
+│   └── default.yaml                  ← all tunable hyperparameters
+│
+├── tests/
+│   └── test_smoke.py                 ← 6 smoke tests
+│
+├── run_backtest.py                   ← synthetic 500-bar backtest demo
+├── requirements.txt                  ← numpy · scipy · pyyaml · pytest
+└── setup.py
+```
 
-No external LP solver, no heavy ML dependency required to run the allocator and stubs.
+---
+
+## `> DEPENDENCIES.exe`
+
+```
+numpy   — numerics throughout
+scipy   — SLSQP quadratic programme solver
+pyyaml  — config loading
+pytest  — tests
+
+No external LP solver. No heavy ML dependency to run allocator + stubs.
+```
+
+---
+
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:000a1a,50:0a000f,100:000000&height=140&section=footer&animation=fadeIn" width="100%"/>
+</div>
